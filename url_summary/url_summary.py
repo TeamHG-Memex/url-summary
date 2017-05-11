@@ -23,7 +23,7 @@ def get_summary(urls, top_items=20, top_urls=3):
         path = parsed.path.rstrip('/').split('/')
         for i in range(1, len(path)):
             index['path start', '/'.join(path[: i + 1])].append(url)
-        for k, v in parse_qsl(parsed.query or ''):
+        for k, v in _parse_qsl(parsed.query or ''):
             index['query key', '?{}'.format(k)].append(url)
             index['query key=value', '?{}={}'.format(k, v)].append(url)
     items = sorted(index.items(), key=lambda x: (-len(x[1]), x[0]))
@@ -38,6 +38,22 @@ def _sample(lst, n, seed=42):
     else:
         random.seed(seed)
         return random.sample(lst, n)
+
+
+def _quote(s):
+    return quote_plus(s, safe='/')
+
+
+def _parse_qsl(s):
+    return parse_qsl(s, keep_blank_values=True)
+
+
+def _bold(x, bold=True):
+    return '<b style="color: black">{}</b>'.format(x) if bold else x
+
+
+def _urlencode_quoted(x):
+    return urlencode(x, quote_via=lambda x, *_: x)
 
 
 class UrlSummaryResult(list):
@@ -82,26 +98,20 @@ class UrlSummaryResult(list):
         path = parsed.path
         query = parsed.query
         if field == 'netloc':
-            netloc = self._bold(parsed.netloc)
+            netloc = _bold(parsed.netloc)
         elif field == 'path start':
             s = len(value)
-            path = '{}{}'.format(self._bold(parsed.path[1:s]), parsed.path[s:])
+            path = '{}{}'.format(_bold(parsed.path[1:s]), parsed.path[s:])
         elif field == 'query key':
             key_value = value[1:]
-            query = urlencode(
-                [(self._bold(quote_plus(k), k == key_value), quote_plus(v))
-                 for k, v in parse_qsl(query)],
-                quote_via=lambda x, *_: x)
+            query = _urlencode_quoted(
+                [(_bold(_quote(k), k == key_value), _quote(v))
+                 for k, v in _parse_qsl(query)])
         elif field == 'query key=value':
             key_value, value_value = value[1:].split('=', 1)
-            query = urlencode(
-                [(self._bold(quote_plus(k), bold),
-                  self._bold(quote_plus(v), bold))
+            query = _urlencode_quoted(
+                [(_bold(_quote(k), bold), _bold(_quote(v), bold))
                  for bold, k, v in (
                      (k == key_value and v == value_value, k, v)
-                     for k, v in parse_qsl(query))],
-                quote_via=lambda x, *_: x)
+                     for k, v in _parse_qsl(query))])
         return urlunsplit((parsed.scheme, netloc, path, query, parsed.fragment))
-
-    def _bold(self, x, bold=True):
-        return '<b style="color: black">{}</b>'.format(x) if bold else x
