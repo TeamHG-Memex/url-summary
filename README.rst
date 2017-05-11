@@ -5,6 +5,14 @@ url-summary
    :target: https://pypi.python.org/pypi/url-summary
    :alt: PyPI Version
 
+.. image:: https://img.shields.io/travis/TeamHG-Memex/url-summary/master.svg
+   :target: http://travis-ci.org/TeamHG-Memex/url-summary
+   :alt: Build Status
+
+.. image:: http://codecov.io/github/TeamHG-Memex/url-summary/coverage.svg?branch=master
+   :target: http://codecov.io/github/TeamHG-Memex/url-summary?branch=master
+   :alt: Code Coverage
+
 Show summary of a large number of URLs in a Jupyter Notebook: analyze domains, paths, query keys and values.
 This is useful if you want to have a quick glance at URLs obtained by crawling.
 
