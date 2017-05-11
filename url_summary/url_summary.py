@@ -16,6 +16,7 @@ def get_summary(urls, top_items=20, top_urls=3):
     Jupyter Notebook display.
     """
     index = defaultdict(list)
+    value_index = defaultdict(set)
     for url in urls:
         index['all', ''].append(url)
         parsed = urlsplit(url)  # type: ParseResult
@@ -25,11 +26,16 @@ def get_summary(urls, top_items=20, top_urls=3):
             index['path start', '/'.join(path[: i + 1])].append(url)
         for k, v in _parse_qsl(parsed.query or ''):
             index['query key', '?{}'.format(k)].append(url)
+            value_index[k].add(v)
             index['query key=value', '?{}={}'.format(k, v)].append(url)
     items = sorted(index.items(), key=lambda x: (-len(x[1]), x[0]))
-    return UrlSummaryResult(
-        (k, (len(v), sorted(_sample(v, top_urls))))
-        for k, v in items[:top_items])
+    summary = []
+    for k, v in items[:top_items]:
+        stat = {'len': len(v), 'sample': sorted(_sample(v, top_urls))}
+        if k[0] == 'query key':
+            stat['len_v_set'] = len(value_index.get(k[1][1:]))
+        summary.append((k, stat))
+    return UrlSummaryResult(summary)
 
 
 def _sample(lst, n, seed=42):
@@ -59,14 +65,14 @@ def _urlencode_quoted(x):
 class UrlSummaryResult(list):
     def _repr_html_(self):
         return '<ul>{}</ul>'.format(
-            '\n'.join(self._render_sample(field, value, n, sample)
-                      for (field, value), (n, sample) in self))
+            '\n'.join(self._render_sample(field, value, stat)
+                      for (field, value), stat in self))
 
-    def _render_sample(self, field, value, n, sample):
+    def _render_sample(self, field, value, stat):
         el_id = uuid4()
         # Using "hidden" class defined by the Jupyter notebook
-        sample_elements = [self._render_url(url, field, value) for url in sample]
-        if n > len(sample_elements):
+        sample_elements = [self._render_url(url, field, value) for url in stat['sample']]
+        if stat['len'] > len(sample_elements):
             sample_elements.append('&hellip;')
         return '''\
         <li>
@@ -76,13 +82,15 @@ class UrlSummaryResult(list):
                 this.getElementsByTagName('SPAN')[0].textContent = \
                     el.classList.contains('hidden') ? '&#9660' : '&#9658'; \
                 el.classList.toggle('hidden')"
-             >{n:,} {field}: <b>{value}</b> <span>&#9658;</span></span>
+             >{n:,} {field}: <b>{value}</b>{extra} <span>&#9658;</span></span>
             <ul id="{id}" class="hidden" style="margin-top: 0">{sample}</ul>
         </li>'''.format(
             id=el_id,
+            n=stat['len'],
             field=field,
             value=value,
-            n=n,
+            extra=(' ({len_v_set:,} unique values)'.format(**stat)
+                   if 'len_v_set' in stat else ''),
             sample='\n'.join('<li>{}</li>'.format(el) for el in sample_elements),
         )
 
