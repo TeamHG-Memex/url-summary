@@ -8,7 +8,7 @@ def read(fname):
 
 setup(
     name='url-summary',
-    version='0.0.2',
+    version='0.0.3',
     author='Konstantin Lopuhin',
     author_email='kostia.lopuhin@gmail.com',
     description='Display a summary of urls in a notebook',
