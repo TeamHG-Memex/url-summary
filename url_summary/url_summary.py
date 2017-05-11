@@ -2,11 +2,11 @@ from collections import defaultdict
 import random
 from uuid import uuid4
 from six.moves.urllib.parse import (
-    urlsplit, parse_qsl, ParseResult, urlunsplit, urlencode, quote_plus)
+    urlsplit, parse_qsl, ParseResult, urlunsplit, quote_plus)
 from typing import Iterable
 
 
-def get_summary(urls, top_items=20, top_urls=3):
+def get_summary(urls, top_items=20, top_urls=3, sample=True):
     # type: (Iterable[str], int, int) -> UrlSummaryResult
     """ Return a summary for given list or iterable of ``urls``.
     ``top_items`` (20 by default) controls how many top-level items to show,
@@ -31,19 +31,21 @@ def get_summary(urls, top_items=20, top_urls=3):
     items = sorted(index.items(), key=lambda x: (-len(x[1]), x[0]))
     summary = []
     for k, v in items[:top_items]:
-        stat = {'len': len(v), 'sample': sorted(_sample(v, top_urls))}
+        stat = {'len': len(v), 'sample': sorted(_sample(v, top_urls, sample=sample))}
         if k[0] == 'query key':
             stat['len_v_set'] = len(value_index.get(k[1][1:]))
         summary.append((k, stat))
     return UrlSummaryResult(summary)
 
 
-def _sample(lst, n, seed=42):
+def _sample(lst, n, seed=42, sample=True):
     if len(lst) <= n:
         return lst
-    else:
+    elif sample:
         random.seed(seed)
         return random.sample(lst, n)
+    else:
+        return lst[:n]
 
 
 def _quote(s):
@@ -59,7 +61,7 @@ def _bold(x, bold=True):
 
 
 def _urlencode_quoted(x):
-    return urlencode(x, quote_via=lambda x, *_: x)
+    return '&'.join('{}={}'.format(k, v) for k, v in x)
 
 
 class UrlSummaryResult(list):

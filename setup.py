@@ -17,6 +17,7 @@ setup(
     packages=['url_summary'],
     install_requires=[
         'six',
+        'typing',
     ],
     long_description=read('README.rst'),
     classifiers=[
