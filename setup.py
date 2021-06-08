@@ -17,7 +17,7 @@ setup(
     packages=['url_summary'],
     install_requires=[
         'six',
-        'typing',
+        'typing;python_version<"3.5"',
     ],
     long_description=read('README.rst'),
     classifiers=[
